@@ -3,8 +3,8 @@ import { Construct } from "constructs";
 
 export default class StorageStack extends Stack {
     
-    public readonly table: Table | undefined;
-    public readonly bucket: Bucket | undefined;
+    public readonly table: Table;
+    public readonly bucket: Bucket;
 
     constructor(scope: Construct, id: string, props: StackProps) {
         super(scope, id, props);
