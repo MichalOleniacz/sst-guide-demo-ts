@@ -1,40 +1,31 @@
-import { v1 as uuid_v1 } from 'uuid';
-import { DynamoDB } from "aws-sdk";
-import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
-import { DocumentClient } from 'aws-sdk/clients/dynamodb';
+import { v1 as uuid_v1 } from "uuid";
+import handler from "./util/handler";
+import dynamoDB from "./util/dynamodb";
+import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
+import { PutItemInput } from "aws-sdk/clients/dynamodb";
 
-const dynamoDB = new DynamoDB.DocumentClient()
-
-export async function main(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2<never>> {
+export const main = handler(
+  async (
+    event: APIGatewayProxyEventV2
+  ): Promise<APIGatewayProxyResultV2<never>> => {
     let data;
 
-    if(event?.body) data = JSON.parse(event.body);
-    else return {
-        statusCode: 400,
-    }
+    if (event?.body) data = JSON.parse(event.body);
+    else throw new Error("No body provided");
 
-    const params: DocumentClient.PutItemInput = {
-        TableName: process.env.TABLE_NAME!,
-        Item: {
-            userId: "123",
-            noteId: uuid_v1(),
-            content: data.content,
-            attachment: data.attachment,
-            createdAt: Date.now()
-        }
-    }
+    const params: PutItemInput = {
+      TableName: process.env.TABLE_NAME!,
+      Item: {
+        userId: { S: "123" },
+        noteId: { S: uuid_v1() },
+        content: { S: data.content },
+        attachment: { S: data.attachment },
+        createdAt: { N: Date.now().toString() },
+      },
+    };
 
-    try {
-        await dynamoDB.put(params).promise();
+    await dynamoDB.put(params);
 
-        return {
-            statusCode: 200,
-            body: JSON.stringify(params.Item)
-        }
-    } catch (e: any) {
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: e.message})
-        }
-    }
-}
+    return params.Item;
+  }
+);
